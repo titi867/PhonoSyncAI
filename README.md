@@ -61,3 +61,7 @@ Este proyecto nace de una trayectoria de más de 15 años en el ámbito de la Fo
 A futuro, el sistema está diseñado para escalar hacia la detección automática de Procesos de Simplificación Fonológica (PSF) y herramientas de análisis forense de la voz.
 
 <https://www.linkedin.com/in/justinaaranedarodriguez/>
+
+## ⚖️ Licencia
+
+Este proyecto está bajo la Licencia MIT. Consulta el archivo [LICENSE](LICENSE) para más detalles.
