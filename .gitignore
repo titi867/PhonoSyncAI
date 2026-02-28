@@ -1,0 +1,25 @@
+# Python (archivos compilados)
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Entornos virtuales
+venv/
+env/
+.env
+
+# Streamlit
+.streamlit/
+
+# Whisper y Modelos
+.cache/
+
+# Archivos temporales de audio generados por la app
+temp_audio.wav
+
+# Datos y resultados locales
+docs/sesiones/*.json
+
+# IDEs
+.vscode/
+.idea/
