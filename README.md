@@ -39,8 +39,10 @@ pip install -r requirements.txt
 streamlit run app.py
 
 ## 📂 Estructura del Proyecto
+
 El proyecto sigue una arquitectura modular para separar la lógica de negocio de la interfaz de usuario:
 
+```text
 PhonoSyncAI/
 ├── app.py                # Punto de entrada de la aplicación (Streamlit)
 ├── src/                  # Código fuente del sistema
@@ -51,6 +53,7 @@ PhonoSyncAI/
 ├── docs/                 # Documentación técnica y sesiones guardadas
 ├── requirements.txt      # Dependencias del sistema
 └── README.md             # Documentación principal
+```
 
 ## 🎯 Motivación y Visión
 Este proyecto nace de una trayectoria de más de 15 años en el ámbito de la Fonoaudiología y la Logopedia. PhonoSync AI busca optimizar el tiempo de los profesionales, permitiendo que la tecnología se encargue del procesamiento pesado (transcripción y fonética base) para que el experto pueda centrarse en el diagnóstico y la intervención clínica.
@@ -58,3 +61,7 @@ Este proyecto nace de una trayectoria de más de 15 años en el ámbito de la Fo
 A futuro, el sistema está diseñado para escalar hacia la detección automática de Procesos de Simplificación Fonológica (PSF) y herramientas de análisis forense de la voz.
 
 <https://www.linkedin.com/in/justinaaranedarodriguez/>
+
+## ⚖️ Licencia
+
+Este proyecto está bajo la Licencia MIT. Consulta el archivo [LICENSE](LICENSE) para más detalles.
