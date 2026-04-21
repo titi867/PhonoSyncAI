@@ -2,7 +2,7 @@ import datetime
 import streamlit as st
 import os
 import json
-import datetime
+from src.utils import guardar_correccion, aplicar_correcciones
 
 # Imports de lógica propia con manejo de errores
 try:
@@ -23,10 +23,10 @@ st.markdown("""
         padding: 5px 10px;
     }
     </style>
-""", unsafe_allow_html=True)
+""", unsafe_allow_html=True) 
 
 # --- INICIALIZACIÓN DEL ESTADO ---
-if 'transcripcion' not in st.session_state:
+if 'transcripcion' not in st.session_state: # Simulo una transcripción inicial para desarrollo
     st.session_state.transcripcion = [
         {"word": "Hola", "start": 0.5, "afi": "/ola/"},
         {"word": "mundo,", "start": 1.2, "afi": "/munde/"},
@@ -55,8 +55,11 @@ with st.sidebar:
                 # 2. Motor Whisper
                 resultado_real = transcribir_audio("temp_audio.wav")
                 
-                # 3. Enriquecer con AFI
+                # 3. Aplicar "IA de Entrenamiento" y Enriquecer con AFI
                 for p in resultado_real:
+                    # Se filtra la palabra por nuestro diccionario de correcciones local
+                    p['word'] = aplicar_correcciones(p['word'])
+                    # Luego sacamos el AFI de la palabra ya corregida
                     p['afi'] = texto_a_afi(p['word'])
                 
                 # 4. Guardar y limpiar
@@ -72,7 +75,7 @@ with st.sidebar:
 st.title("🎙️ IA Audio Editor & Phonetic Viewer")
 st.info("Haz clic en las palabras para sincronizar el audio o edita el texto directamente abajo.")
 
-col1, col2 = st.columns([2, 1])
+col1, col2 = st.columns([2, 1]) 
 
 with col1:
     st.subheader("📝 Editor de Transcripción")
@@ -85,28 +88,25 @@ with col1:
     st.write("---")
     
     # Contenedor de palabras (Botones)
-    st.write("Visualización de segmentos:")
-    espacio_texto = st.container()
+    st.write("Visualización de segmentos:") 
+    espacio_texto = st.container() 
     with espacio_texto:
-        # Mostramos los botones en una cuadrícula fluida
-        # Usamos columnas pequeñas para simular flujo de texto
-        cols = st.columns(8) # Ajustable según diseño
-        for idx, item in enumerate(st.session_state.transcripcion):
-            mostrar = item['afi'] if modo_afi else item['word']
-            # El botón se coloca en una de las 8 columnas usando módulo
-            if cols[idx % 8].button(mostrar, key=f"btn_{idx}"):
-                st.info(f"⏱️ Marca de tiempo: {item['start']}s | AFI: {item['afi']}")
+        cols = st.columns(8) 
+        for idx, item in enumerate(st.session_state.transcripcion): 
+            mostrar = item['afi'] if modo_afi else item['word'] 
+            if cols[idx % 8].button(mostrar, key=f"btn_{idx}"): 
+                st.info(f"⏱️ Marca de tiempo: {item['start']}s | AFI: {item['afi']}") 
                 
     st.write("---")
     
-    # --- LÓGICA DE EDICIÓN REACTIVA ---
-    texto_para_editar = " ".join([w['word'] for w in st.session_state.transcripcion])
+    # --- LÓGICA DE EDICIÓN REACTIVA Y ENTRENAMIENTO ---
+    texto_para_editar = " ".join([w['word'] for w in st.session_state.transcripcion]) 
     
-    nuevo_texto = st.text_area(
+    nuevo_texto = st.text_area( 
         "📝 Corrección manual (Edita y pulsa Ctrl+Enter para actualizar):", 
         value=texto_para_editar, 
         height=150
-    )
+    ) 
 
     # Si el texto del área es diferente al que tenemos guardado, actualizamos
     if nuevo_texto != texto_para_editar:
@@ -114,14 +114,21 @@ with col1:
         nueva_lista = []
         original = st.session_state.transcripcion
         
+        # 🛡️ EL SEGURO: Solo aprendemos si la cantidad de palabras es idéntica
+        # Si añado o quito palabras, los índices se descuadran, así que evitamos aprender basura.
+        es_seguro_entrenar = len(palabras_nuevas) == len(original)
+        
         for i, p_word in enumerate(palabras_nuevas):
-            # Lógica de asignación de tiempo:
             if i < len(original):
-                # Si la palabra ya existía en esa posición, mantenemos su tiempo
-                # (Nota: Esto asume corrección ortográfica, no inserción)
                 st_time = original[i]['start']
+                
+                # --- AQUÍ SE ENTRENA A LA IA (CON SEGURIDAD) ---
+                if es_seguro_entrenar:
+                    palabra_vieja = original[i]['word']
+                    if p_word.lower() != palabra_vieja.lower():
+                        guardar_correccion(palabra_vieja, p_word)
+                # -----------------------------------------------
             else:
-                # Si es una palabra añadida al final, le damos el tiempo de la anterior + 0.3s
                 st_time = nueva_lista[-1]['start'] + 0.3 if nueva_lista else 0.0
             
             nueva_lista.append({
@@ -134,22 +141,21 @@ with col1:
         st.rerun()
 
 with col2:
-    with col2:
-        st.subheader("📊 Metadatos JSON")
-        st.write("Estructura de datos en tiempo real:")
-        
+    st.subheader("📊 Metadatos JSON")
+    st.write("Estructura de datos en tiempo real:")
+    
+    st.json(st.session_state.transcripcion) # Muestra el JSON de la transcripción actualizada en tiempo real
 
-    st.json(st.session_state.transcripcion)
-
-    st.divider()
+    st.divider() # Separador visual
     st.subheader("📥 Gestión de Resultados")
     
     # 1. Preparar el nombre del archivo con fecha/hora
-    timestamp_str = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-    nombre_archivo = f"sesion_{timestamp_str}.json"
-    json_string = json.dumps(st.session_state.transcripcion, indent=4, ensure_ascii=False)
+    timestamp_str = datetime.datetime.now().strftime("%Y%m%d_%H%M%S") 
+    nombre_archivo = f"sesion_{timestamp_str}.json" 
+    json_string = json.dumps(st.session_state.transcripcion, indent=4, ensure_ascii=False) 
+    # Convierte la lista de palabras a un string JSON con formato legible y soporte para caracteres especiales.
 
-    # 2. BOTÓN DE DESCARGA (Para el usuario/navegador)
+    # 2. BOTÓN DE DESCARGA
     st.download_button(
         label="💾 Descargar para entregar",
         data=json_string,
@@ -157,13 +163,10 @@ with col2:
         mime="application/json"
     )
 
-    # 3. GUARDADO AUTOMÁTICO EN EL SERVIDOR (Copia local)
+    # 3. GUARDADO AUTOMÁTICO EN EL SERVIDOR
     if st.button("📁 Guardar copia local en /docs"):
         try:
-            # Definimos la ruta de la subcarpeta
             subcarpeta = os.path.join("docs", "sesiones")
-            
-            # Verificamos/Creamos la carpeta antes de escribir
             if not os.path.exists(subcarpeta):
                 os.makedirs(subcarpeta)
                 st.info(f"Carpeta {subcarpeta} creada con éxito.")
