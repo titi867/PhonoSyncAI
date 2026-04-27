@@ -54,6 +54,9 @@ PhonoSyncAI/
 ├── requirements.txt      # Dependencias del sistema
 └── README.md             # Documentación principal
 ```
+## Nota técnica
+
+Se fijaron versiones específicas de las dependencias para garantizar la reproducibilidad del entorno y evitar incompatibilidades entre Whisper, Torch y Streamlit. Además, se incluyó explícitamente la biblioteca soundfile para asegurar la correcta lectura de archivos de audio, y vosk para permitir la integración futura de un motor de transcripción ligero orientado a dispositivos con menor capacidad de cómputo.
 
 ## 🎯 Motivación y Visión
 Este proyecto nace de una trayectoria de más de 15 años en el ámbito de la Fonoaudiología y la Logopedia. PhonoSync AI busca optimizar el tiempo de los profesionales, permitiendo que la tecnología se encargue del procesamiento pesado (transcripción y fonética base) para que el experto pueda centrarse en el diagnóstico y la intervención clínica.

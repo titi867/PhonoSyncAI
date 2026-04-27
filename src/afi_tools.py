@@ -1,44 +1,79 @@
-import re
+import logging
+import config
+from typing import List
 
-def texto_a_afi(texto):
-    """
-    Convierte texto en español a una representación fonética básica (AFI).
-    """
-    if not texto:
-        return ""
-    
-    # Convertimos a minúsculas para procesar
-    fon = texto.lower()
-    
-    # --- Reglas de Sustitución Fonética ---
-    # (El orden importa para no romper diígrafos)
-    
-    # Consonantes complejas
-    fon = fon.replace('ll', 'ʎ')
-    fon = fon.replace('ch', 'tʃ')
-    fon = fon.replace('qu', 'k')
-    fon = fon.replace('que', 'ke').replace('qui', 'ki')
-    fon = fon.replace('gu', 'g')
-    
-    # Grafemas con sonidos específicos
-    fon = fon.replace('v', 'b')
-    fon = fon.replace('z', 'θ')
-    fon = re.sub(r'c([eiéí])', r'θ\1', fon) # c ante e, i
-    fon = fon.replace('c', 'k') # resto de c
-    
-    fon = fon.replace('h', '') # la h es muda
-    fon = fon.replace('j', 'x')
-    fon = re.sub(r'g([eiéí])', r'x\1', fon) # g ante e, i
-    
-    fon = fon.replace('y', 'j') # y como semiconsonante
-    fon = fon.replace('ñ', 'ɲ')
 
-    # El sonido /b/ (v y b son iguales en AFI para español)
-    fon = fon.replace('v', 'b')
-    fon = fon.replace('b', 'b')
-    
-    # La r fuerte (al principio o rr)
-    fon = re.sub(r'^r', 'r̄', fon)
-    fon = fon.replace('rr', 'r̄')
-    
-    return f"/{fon}/"
+def texto_a_afi(palabra: str) -> str:
+    """Convierte una palabra en su transcripción fonética AFI.
+
+    Esta función aplica reglas fonéticas simplificadas del español
+    para generar una representación aproximada en AFI.
+
+    Args:
+        palabra: Palabra en texto plano.
+
+    Returns:
+        Cadena con la transcripción AFI correspondiente.
+        Si la palabra no es válida, devuelve la palabra original.
+    """
+    if not isinstance(palabra, str) or not palabra.strip():
+        logging.warning(f"Entrada inválida en texto_a_afi: {palabra}")
+        return palabra
+
+    palabra_norm = palabra.lower().strip()
+
+    try:
+        afi = convertir_a_afi(palabra_norm)
+        logging.info(f"AFI generado: {palabra_norm} → {afi}")
+        return afi
+    except Exception as e:
+        logging.error(f"Error generando AFI para '{palabra}': {str(e)}")
+        return palabra
+
+
+def convertir_a_afi(palabra: str) -> str:
+    """Aplica reglas fonéticas básicas del español.
+
+    Esta función es interna y contiene las reglas de conversión.
+    Se puede ampliar en el futuro para mayor precisión.
+
+    Args:
+        palabra: Palabra normalizada.
+
+    Returns:
+        Transcripción AFI aproximada.
+    """
+    # Reglas fonéticas mejoradas
+    reglas = [
+        ("ll", "ʎ"),
+        ("ch", "tʃ"),
+        ("rr", "r"),
+        ("r", "ɾ"),
+
+        # Nuevas reglas intermedias
+        ("qu", "k"),
+        ("que", "ke"),
+        ("qui", "ki"),
+        ("gue", "ge"),
+        ("gui", "gi"),
+
+        ("ce", "θe"),
+        ("ci", "θi"),
+        ("z", "θ"),
+
+        ("j", "x"),
+        ("ge", "xe"),
+        ("gi", "xi"),
+
+        ("v", "b"),
+        ("h", ""),      # muda
+        ("y", "ʝ"),     # consonante
+        ("x", "ks"),
+    ]
+
+
+    afi = palabra
+    for origen, destino in reglas:
+        afi = afi.replace(origen, destino)
+
+    return f"/{afi}/"

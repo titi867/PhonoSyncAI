@@ -33,7 +33,7 @@
     "flores": "flores",
     "amarillas": "amarillas",
     "respionó": "respiró",
-    "se": "hondo",
+    "se": "acercó",
     "acercó": "se",
     "de": "acercó",
     "espacio": "despacio",
@@ -57,5 +57,9 @@
     "azul": "azul",
     "brillaba": "brillaba",
     "como": "como",
-    "sol": "sol"
+    "sol": "sol",
+    "respió": "respió",
+    "hondo": "se",
+    "despacio": "despacio",
+    "travieso": "travieso"
 }

@@ -1,3 +1,8 @@
-streamlit
-openai-whisper
-setuptools-rust
+streamlit==1.32.0
+openai-whisper==20231117
+torch==2.1.2
+pandas==2.2.0
+numpy==1.26.3
+soundfile==0.12.1
+python-dotenv==1.0.1
+vosk==0.3.45
