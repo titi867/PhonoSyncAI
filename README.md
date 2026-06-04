@@ -1,70 +1,200 @@
 # PhonoSync AI 🎙️✨
 
-> **"Voices don't lie"** – Un sistema inteligente de transcripción, sincronización y análisis fonético.
+## Sistema de Transcripción, Sincronización y Análisis Fonético Asistido por IA
 
-**PhonoSync AI** es una aplicación multiplataforma diseñada para cerrar la brecha entre la captura de audio y el análisis clínico/lingüístico. Desarrollada como Proyecto Final de Grado (TFG) en **Desarrollo de Aplicaciones Multiplataforma (DAM)** esta herramienta utiliza modelos de Inteligencia Artificial para ofrecer una experiencia de transcripción interactiva y precisa.
+> *"Las voces no mienten."*
+> Una herramienta diseñada para transformar audio en información útil, clara y clínicamente relevante.
+
+---
+
+## 🌟 Descripción General
+
+**PhonoSync AI** es una aplicación interactiva desarrollada como Trabajo Final de Grado (TFG) en **Desarrollo de Aplicaciones Multiplataforma (DAM)**.
+
+Su objetivo es facilitar el trabajo de profesionales de la **Fonoaudiología**, **Logopedia** y **Lingüística** mediante:
+
+* Transcripción automática de audio
+* Conversión fonética al AFI
+* Visualización segmentada e interactiva
+* Sincronización con marcas temporales
+* Análisis fonológico y prosódico *(mockups funcionales)*
+* Exportación de resultados en formato JSON
+
+El sistema combina **Inteligencia Artificial**, diseño accesible y una arquitectura modular que permite futuras ampliaciones.
+
+---
 
 ## 🚀 Características Principales
 
-* **Transcripción Robusta:** Integración con el modelo **OpenAI Whisper** para una conversión de audio a texto de alta precisión, incluso en entornos con ruido.
-* **Motor Fonético Interactivo:** Conversión automática de la transcripción al **Alfabeto Fonético Internacional (AFI)** mediante el módulo especializado `afi_tools`.
-* **Sincronización Bidireccional:** Interfaz diseñada en **Streamlit** que permite la edición de texto con persistencia de metadatos temporales (*timestamps*).
-* **Interoperabilidad:** Exportación de resultados en formato **JSON**, facilitando su integración en flujos de trabajo educativos, clínicos o de investigación.
+* 🎯 Transcripción de alta precisión mediante OpenAI Whisper.
+* 🔤 Conversión fonética automática con el módulo `afi_tools`.
+* 🖥️ Segmentación visual interactiva usando HTML + CSS + `st.html()` para un control total del layout.
+* 🔄 Modo AFI para alternar entre texto ortográfico y fonético.
+* ✏️ Edición manual sincronizada con preservación de timestamps.
+* 📊 Análisis fonológico y prosódico *(mockups dinámicos)*.
+* 📁 Exportación JSON para uso clínico, educativo o investigativo.
+* 🌐 Compatibilidad multiplataforma gracias a Streamlit.
+
+---
 
 ## 🛠️ Stack Tecnológico
 
-* **Lenguaje:** Python (Certificación PCAP).
-* **IA/ML:** OpenAI Whisper.
-* **Frontend:** Streamlit.
-* **Formatos de Datos:** JSON para persistencia y metadatos.
+### Lenguaje
+
+* Python 3.10+
+
+### Inteligencia Artificial
+
+* OpenAI Whisper
+* Vosk (modo offline)
+
+### Frontend
+
+* Streamlit
+
+### Procesamiento de Audio
+
+* FFmpeg
+* SoundFile
+
+### Persistencia
+
+* JSON
+
+### Arquitectura
+
+* Separación modular entre interfaz, lógica de negocio y motores de IA
+
+---
 
 ## ⚙️ Instalación y Uso
 
-Sigue estos pasos para ejecutar **PhonoSync AI** en tu entorno local:
-
 ### 1. Requisitos previos
-Es necesario tener instalado **FFmpeg** en el sistema para que Whisper pueda procesar los archivos de audio:
-* **Windows (con Chocolatey):** `choco install ffmpeg`
-* **macOS (con Homebrew):** `brew install ffmpeg`
-* **Linux:** `sudo apt update && sudo apt install ffmpeg`
 
-### 2. Clonar el proyecto
-git clone [https://github.com/titi867/PhonoSyncAI.git](https://github.com/titi867/PhonoSyncAI.git)
+Instalar FFmpeg:
+
+#### Windows
+
+```bash
+choco install ffmpeg
+```
+
+#### macOS
+
+```bash
+brew install ffmpeg
+```
+
+#### Linux
+
+```bash
+sudo apt update
+sudo apt install ffmpeg
+```
+
+### 2. Clonar el repositorio
+
+```bash
+git clone https://github.com/titi867/PhonoSyncAI.git
 cd PhonoSyncAI
+```
 
-### 3. Instalar las librerías necesarias
+### 3. Instalar dependencias
+
+```bash
 pip install -r requirements.txt
+```
 
-# Asegúrate de estar en la carpeta raíz del proyecto
+### 4. Ejecutar la aplicación
+
+```bash
 streamlit run app.py
+```
+
+La aplicación estará disponible en:
+
+```text
+http://localhost:8501
+```
+
+---
 
 ## 📂 Estructura del Proyecto
 
-El proyecto sigue una arquitectura modular para separar la lógica de negocio de la interfaz de usuario:
-
 ```text
 PhonoSyncAI/
-├── app.py                # Punto de entrada de la aplicación (Streamlit)
-├── src/                  # Código fuente del sistema
-│   ├── __init__.py       # Inicialización de módulo
-│   ├── afi_tools.py      # Motor de conversión fonética (AFI)
-│   ├── engine.py         # Integración con el modelo Whisper
-│   └── utils.py          # Funciones auxiliares y gestión de archivos
-├── docs/                 # Documentación técnica y sesiones guardadas
-├── requirements.txt      # Dependencias del sistema
-└── README.md             # Documentación principal
+├── app.py
+├── src/
+│   ├── afi_tools.py
+│   ├── engine.py
+│   ├── vosk_engine.py
+│   └── utils.py
+├── docs/
+│   ├── sesiones/
+│   └── ...
+├── correcciones.json
+├── requirements.txt
+├── requirements-dev.txt
+└── README.md
 ```
-## Nota técnica
 
-Se fijaron versiones específicas de las dependencias para garantizar la reproducibilidad del entorno y evitar incompatibilidades entre Whisper, Torch y Streamlit. Además, se incluyó explícitamente la biblioteca soundfile para asegurar la correcta lectura de archivos de audio, y vosk para permitir la integración futura de un motor de transcripción ligero orientado a dispositivos con menor capacidad de cómputo.
+### Descripción
+
+| Archivo / Carpeta      | Función                              |
+| ---------------------- | ------------------------------------ |
+| `app.py`               | Interfaz principal en Streamlit      |
+| `afi_tools.py`         | Conversión fonética al AFI           |
+| `engine.py`            | Motor de transcripción Whisper       |
+| `vosk_engine.py`       | Motor alternativo offline            |
+| `utils.py`             | Utilidades y gestión de correcciones |
+| `docs/`                | Documentación técnica y sesiones     |
+| `correcciones.json`    | Correcciones aprendidas              |
+| `requirements.txt`     | Dependencias de producción           |
+| `requirements-dev.txt` | Dependencias de desarrollo           |
+
+---
+
+## 🧠 Nota Técnica
+
+Para garantizar estabilidad y reproducibilidad:
+
+* Se fijaron versiones específicas de Whisper, Torch, Streamlit y Vosk.
+* Se incluyó explícitamente `soundfile` para la lectura de audio.
+* Se añadió `vosk` para permitir un motor alternativo más ligero.
+* Se utilizó `st.html()` para renderizar HTML puro dentro de Streamlit, evitando las limitaciones de `st.markdown()` y permitiendo un grid visual totalmente controlado para los segmentos.
+
+---
 
 ## 🎯 Motivación y Visión
-Este proyecto nace de una trayectoria de más de 15 años en el ámbito de la Fonoaudiología y la Logopedia. PhonoSync AI busca optimizar el tiempo de los profesionales, permitiendo que la tecnología se encargue del procesamiento pesado (transcripción y fonética base) para que el experto pueda centrarse en el diagnóstico y la intervención clínica.
 
-A futuro, el sistema está diseñado para escalar hacia la detección automática de Procesos de Simplificación Fonológica (PSF) y herramientas de análisis forense de la voz.
+Este proyecto nace de más de **15 años de experiencia en Fonoaudiología y Logopedia**.
 
-<https://www.linkedin.com/in/justinaaranedarodriguez/>
+**PhonoSync AI** busca:
+
+* Optimizar el tiempo de los profesionales.
+* Automatizar tareas repetitivas.
+* Facilitar el análisis fonético y prosódico.
+* Servir como base para herramientas clínicas más avanzadas.
+
+### Futuras líneas de desarrollo
+
+* 🔍 Detección automática de Procesos de Simplificación Fonológica (PSF).
+* 🎤 Análisis forense de la voz.
+* 📈 Modelos de prosodia más precisos.
+* 🗄️ Integración con bases de datos clínicas.
+
+---
+
+## 👩‍💻 Autora
+
+**Justina Araneda Rodríguez**  
+Fonoaudióloga · Desarrolladora DAM  
+🔗 [LinkedIn](https://www.linkedin.com/in/justinaaranedarodriguez/)
+
+---
 
 ## ⚖️ Licencia
 
-Este proyecto está bajo la Licencia MIT. Consulta el archivo [LICENSE](LICENSE) para más detalles.
+Este proyecto se distribuye bajo la **Licencia MIT**.
+
+Consulta el archivo `LICENSE` para más detalles.

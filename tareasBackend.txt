@@ -1,5 +1,0 @@
-tareas:
-
-- Entrenamiento de palabras editadas
-- Pruebas offline
-- Investigar otros modelos transcripción y qué alternativas aplican para el proyecto

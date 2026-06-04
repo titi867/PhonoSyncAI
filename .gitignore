@@ -1,4 +1,6 @@
-# Python (archivos compilados)
+# ============================================
+#   PYTHON
+# ============================================
 __pycache__/
 *.py[cod]
 *$py.class
@@ -6,20 +8,77 @@ __pycache__/
 # Entornos virtuales
 venv/
 env/
+.venv/
 .env
 
-# Streamlit
+# Archivos temporales
+*.log
+*.tmp
+*.temp
+
+# ============================================
+#   STREAMLIT
+# ============================================
 .streamlit/
 
-# Whisper y Modelos
-.cache/
+# ============================================
+#   MODELOS DE IA (Whisper, Vosk, etc.)
+# ============================================
+# Whisper models
+modelos/whisper/*.pt
 
-# Archivos temporales de audio generados por la app
+# Vosk models
+modelos/vosk-es/*
+
+# Cachés de modelos
+.cache/
+whisper_cache/
+torch_cache/
+
+# ============================================
+#   AUDIO Y ARCHIVOS PESADOS
+# ============================================
+# Audios de prueba
+audios/*
+*.wav
+*.mp3
+*.flac
+*.ogg
+
+# Audio temporal generado por la app
 temp_audio.wav
 
-# Datos y resultados locales
+# ============================================
+#   DOCUMENTOS PERSONALES DEL TFG
+# ============================================
+*.docx
+*.pdf
+*.pptx
+PortadaPhonoSyncAI.docx
+Anteproyecto.docx
+AnteproyectoPhonoSyncAI.pdf
+
+# ============================================
+#   EXPORTS Y SESIONES
+# ============================================
 docs/sesiones/*.json
 
-# IDEs
+# ============================================
+#   IDEs Y EDITORES
+# ============================================
 .vscode/
 .idea/
+*.code-workspace
+
+# ============================================
+#   SISTEMA OPERATIVO
+# ============================================
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+desktop.ini
+
+# Linux
+*~

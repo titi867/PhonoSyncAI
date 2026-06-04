@@ -3,258 +3,340 @@ import streamlit as st
 import os
 import json
 import logging
-import config
+import matplotlib.pyplot as plt
+import numpy as np
+from PIL import Image
 
 from src.utils import guardar_correccion, aplicar_correcciones
 from src.afi_tools import texto_a_afi
 from src.engine import transcribir_audio
 from src.vosk_engine import transcribir_vosk
-from PIL import Image
 
 
-# --- CONFIGURACIÓN DE PÁGINA ---
+# ============================
+#   CARGAR CORRECCIONES
+# ============================
+try:
+    with open("correcciones.json", "r", encoding="utf-8") as f:
+        correcciones = json.load(f)
+except:
+    correcciones = {}
+    logging.warning("No se encontró 'correcciones.json', iniciando vacío.")
+
+
+# ============================
+#   CONFIGURACIÓN DE PÁGINA
+# ============================
 st.set_page_config(page_title="PhonoSyncAI - TFG DAM", layout="wide")
 
-# --- CABECERA PRINCIPAL ---
-logo = Image.open("logo.png")
 
-st.markdown(
-    """
-    <div style="
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        margin-top: -20px;
-    ">
-    """,
-    unsafe_allow_html=True
-)
+# ============================
+#   CABECERA PRINCIPAL
+# ============================
+st.markdown('<div class="header-container">', unsafe_allow_html=True)
+st.image("logo.png", width=180)
+st.markdown("""
+    <h1 class="header-title">PhonoSyncAI</h1>
+    <h4 class="header-subtitle">Sistema de Transcripción Fonética y Sincronización Inteligente</h4>
+</div>
+<hr class="header-divider">
+""", unsafe_allow_html=True)
 
-st.image(logo, width=180)
 
-st.markdown(
-    """
-        <h1 style="margin-bottom: 0; color: #E6EDF3;">PhonoSyncAI</h1>
-        <h4 style="color: #6EA8FE; margin-top: 5px;">
-            Sistema de Transcripción Fonética y Sincronización Inteligente
-        </h4>
-    </div>
-
-    <hr style="margin-top: 20px; margin-bottom: 30px; border-color: #30363D;">
-    """,
-    unsafe_allow_html=True
-)
-
-# --- ESTILOS CUSTOM ---
+# ============================
+#   CSS DEFINITIVO
+# ============================
 st.markdown("""
 <style>
 
-    /* Botones */
-    .stButton>button {
-        background-color: #238636;
-        color: white;
-        border-radius: 6px;
-        padding: 8px 18px;
-        border: none;
-        font-weight: 600;
-        transition: 0.2s;
-    }
-    .stButton>button:hover {
-        background-color: #2EA043;
-        transform: scale(1.02);
+    /* CABECERA */
+    .header-container {
+        margin-top: 20px !important;
+        margin-bottom: 10px !important;
+        text-align: center;
     }
 
-    /* Inputs */
-    .stTextInput>div>div>input,
-    .stTextArea textarea,
-    .stSelectbox>div>div {
-        background-color: #0D1117;
+    .header-title {
+        margin-bottom: 0;
         color: #E6EDF3;
-        border: 1px solid #30363D;
-        border-radius: 6px;
-    }
-
-    /* JSON viewer */
-    .stCodeBlock {
-        background-color: #161B22 !important;
-        border-radius: 6px;
-    }
-
-    /* Títulos */
-    h1, h2, h3 {
         font-family: 'Segoe UI', sans-serif;
         font-weight: 700;
-        color: #E6EDF3;
     }
 
-    h4 {
+    .header-subtitle {
+        color: #6EA8FE;
+        margin-top: 5px;
         font-family: 'Segoe UI', sans-serif;
         font-weight: 500;
+    }
+
+    .header-divider {
+        margin-top: 20px;
+        margin-bottom: 30px;
+        border-color: #30363D;
+    }
+
+    /* ESPACIADO GLOBAL */
+    .block-container {
+        padding-top: 2.5rem !important;
+    }
+
+    /* GRID FLEX */
+    .segment-grid {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 10px;
+    }
+
+    /* CAJA DE PALABRA */
+    .segment-box {
+        flex: 0 0 calc(12.5% - 8px); /* 8 por fila */
+        padding: 6px 10px;
+        border-radius: 6px;
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: white;
+        text-align: center;
+        cursor: pointer;
+    }
+
+    /* COLORES POR TIPO */
+    .word-noun { background-color: #4C8BF5; }
+    .word-verb { background-color: #A855F7; }
+    .word-adj { background-color: #F59E0B; }
+    .word-error { background-color: #EF4444; }
+    .word-unknown { background-color: #6B7280; }
+
+    /* HOVER */
+    .segment-box:hover {
+        opacity: 0.85;
+        transform: scale(1.03);
+        transition: 0.1s ease-in-out;
     }
 
 </style>
 """, unsafe_allow_html=True)
 
-# --- INICIALIZACIÓN DEL ESTADO ---
+
+# ============================
+#   ESTADO
+# ============================
 if "transcripcion" not in st.session_state:
     st.session_state.transcripcion = []
 
+if "modo_afi" not in st.session_state:
+    st.session_state.modo_afi = False
 
-# --- SIDEBAR ---
+
+# ============================
+#   SIDEBAR
+# ============================
 with st.sidebar:
     st.title("⚙️ Configuración")
-    archivo_audio = st.file_uploader("1. Subir Audio", type=["wav", "mp3"])
+
+    st.subheader("📁 Subir Audio")
+    archivo_audio = st.file_uploader("Selecciona un archivo", type=["wav", "mp3"])
 
     st.divider()
-    modo_afi = st.toggle("🔮 Mostrar Modo Fonético (AFI)")
 
-    opcion_modelo = st.selectbox(
-    "Motor de transcripción",
-    ["Whisper (preciso)", "Vosk (offline)"]
-    )
+    # MICRÓFONO MOCKUP
+    st.subheader("🎤 Grabación por micrófono (Mockup)")
+
+    if "grabando" not in st.session_state:
+        st.session_state.grabando = False
+
+    if st.button("🎙️ Iniciar grabación (simulada)"):
+        st.session_state.grabando = True
+
+    if st.session_state.grabando:
+        st.markdown("""
+        <div style="width:40px;height:40px;background:#FF4B4B;border-radius:50%;margin:auto;
+        animation:pulso 1s infinite;"></div>
+        <style>
+        @keyframes pulso {
+            0% { transform:scale(1); opacity:0.8; }
+            50% { transform:scale(1.3); opacity:1; }
+            100% { transform:scale(1); opacity:0.8; }
+        }
+        </style>
+        """, unsafe_allow_html=True)
+
+        if st.button("⏹️ Detener grabación"):
+            st.session_state.grabando = False
+            st.info("📁 Audio simulado listo para procesar")
+
+    st.divider()
+
+    st.subheader("🔡 Opciones")
+    st.session_state.modo_afi = st.toggle("🧠 Mostrar AFI", value=st.session_state.modo_afi)
+
+    opcion_modelo = st.selectbox("Motor de transcripción", ["Whisper (preciso)", "Vosk (offline)"])
+
+    st.divider()
+
+    if st.button("⚡ Procesar con IA"):
+        st.session_state.procesar_ia = True
 
 
-    if st.button("🚀 Procesar con IA"):
-        if archivo_audio:
-            try:
-                with st.spinner("La IA está escuchando y transcribiendo..."):
-                    logging.info(f"Usuario subió archivo: {archivo_audio.name}")
+# ============================
+#   PROCESAMIENTO IA
+# ============================
+if st.session_state.get("procesar_ia", False):
 
-                    # Guardar temporalmente
-                    with open("temp_audio.wav", "wb") as f:
-                        f.write(archivo_audio.getbuffer())
+    if archivo_audio:
+        try:
+            with st.spinner("Procesando audio..."):
 
-                    if opcion_modelo == "Whisper (preciso)":
-                        resultado = transcribir_audio("temp_audio.wav")
-                        texto = resultado["texto"]
-                        segmentos = resultado["segmentos"]
+                with open("temp_audio.wav", "wb") as f:
+                    f.write(archivo_audio.getbuffer())
 
-                        # Conversión Whisper → tu formato
-                        resultado_real = []
-                        for seg in segmentos:
-                            if "words" not in seg:
-                                logging.warning("Segmento sin 'words', usando texto completo.")
-                                palabras = seg["text"].split()
-                                for p in palabras:
-                                    resultado_real.append({
-                                        "word": p,
-                                        "start": round(seg["start"], 2),
-                                        "afi": texto_a_afi(p)
-                                    })
-                                continue
+                if opcion_modelo == "Whisper (preciso)":
+                    resultado = transcribir_audio("temp_audio.wav")
+                    segmentos = resultado["segmentos"]
 
-                            for w in seg["words"]:
-                                palabra = w["word"]
-                                palabra_corregida = aplicar_correcciones(palabra)
+                    resultado_real = []
+                    for seg in segmentos:
+                        if "words" not in seg:
+                            for p in seg["text"].split():
                                 resultado_real.append({
-                                    "word": palabra_corregida,
-                                    "start": round(w["start"], 2),
-                                    "afi": texto_a_afi(palabra_corregida)
+                                    "word": p,
+                                    "start": round(seg["start"], 2),
+                                    "afi": texto_a_afi(p)
                                 })
+                            continue
 
+                        for w in seg["words"]:
+                            palabra = w["word"].lower()
+                            palabra_corregida = correcciones.get(palabra, palabra)
+                            resultado_real.append({
+                                "word": palabra_corregida,
+                                "start": round(w["start"], 2),
+                                "afi": texto_a_afi(palabra_corregida)
+                            })
+
+                else:
+                    resultado = transcribir_vosk("temp_audio.wav")
+                    resultado_real = []
+
+                    if resultado["palabras"]:
+                        for w in resultado["palabras"]:
+                            palabra = w["word"].lower()
+                            palabra_corregida = correcciones.get(palabra, palabra)
+                            resultado_real.append({
+                                "word": palabra_corregida,
+                                "start": w.get("start", 0),
+                                "afi": texto_a_afi(palabra_corregida)
+                            })
                     else:
-                        from src.vosk_engine import transcribir_vosk
-                        resultado = transcribir_vosk("temp_audio.wav")
+                        for p in resultado["texto"].split():
+                            palabra_corregida = aplicar_correcciones(p)
+                            resultado_real.append({
+                                "word": palabra_corregida,
+                                "start": 0,
+                                "afi": texto_a_afi(palabra_corregida)
+                            })
 
-                        resultado_real = []
+                st.session_state.transcripcion = resultado_real
+                os.remove("temp_audio.wav")
 
-                        if resultado["palabras"]:
-                            # Caso normal (si algún día hay palabras)
-                            for w in resultado["palabras"]:
-                                palabra = w["word"]
-                                palabra_corregida = aplicar_correcciones(palabra)
-                                resultado_real.append({
-                                    "word": palabra_corregida,
-                                    "start": w.get("start", 0),
-                                    "afi": texto_a_afi(palabra_corregida)
-                                })
-                        else:
-                            # Fallback: dividir el texto en palabras
-                            for p in resultado["texto"].split():
-                                palabra_corregida = aplicar_correcciones(p)
-                                resultado_real.append({
-                                    "word": palabra_corregida,
-                                    "start": 0,
-                                    "afi": texto_a_afi(palabra_corregida)
-                                })
+            st.success("¡Análisis completado!")
+
+        except Exception as e:
+            st.error(f"Error: {e}")
+
+    else:
+        st.error("Sube un archivo primero.")
+
+    st.session_state.procesar_ia = False
+    st.rerun()
 
 
-                    st.session_state.transcripcion = resultado_real
-                    os.remove("temp_audio.wav")
-
-                st.success("¡Análisis completado!")
-                st.rerun()
-
-            except Exception as e:
-                logging.error(f"Error procesando audio: {str(e)}")
-                st.error("❌ Hubo un problema procesando el audio.")
-        else:
-            st.error("Primero debes subir un archivo de audio.")
-
-# --- CUERPO PRINCIPAL ---
+# ============================
+#   CUERPO PRINCIPAL
+# ============================
 st.title("🎙️ IA Audio Editor & Phonetic Viewer")
-st.info("Haz clic en las palabras para sincronizar el audio o edita el texto directamente abajo.")
+st.info("Haz clic en las palabras para sincronizar el audio o edita el texto abajo.")
 
 col1, col2 = st.columns([2, 1])
 
+
 # ============================
-#   COLUMNA IZQUIERDA (Editor)
+#   COLUMNA IZQUIERDA
 # ============================
 with col1:
-    st.subheader("📝 Editor de Transcripción")
 
+    st.subheader("🎧 Reproductor de Audio")
     if archivo_audio:
         st.audio(archivo_audio)
     else:
-        st.warning("Pista: Sube un audio en la izquierda para activar el reproductor.")
+        st.warning("Sube un audio para activar el reproductor.")
 
     st.write("---")
 
-    # --- VISUALIZACIÓN DE PALABRAS COMO BOTONES ---
-    st.write("Visualización de segmentos:")
+    # ============================
+    #   SEGMENTOS DETECTADOS
+    # ============================
+    st.subheader("🧩 Segmentos Detectados")
 
     if st.session_state.transcripcion:
-        espacio_texto = st.container()
-        with espacio_texto:
-            cols = st.columns(8)
-            for idx, item in enumerate(st.session_state.transcripcion):
-                mostrar = item["afi"] if modo_afi else item["word"]
-                if cols[idx % 8].button(mostrar, key=f"btn_{idx}"):
-                    st.info(f"⏱️ Marca de tiempo: {item['start']}s | AFI: {item['afi']}")
+
+        html_segmentos = '<div class="segment-grid">'
+
+        for item in st.session_state.transcripcion:
+            mostrar = item["afi"] if st.session_state.modo_afi else item["word"]
+            palabra = item["word"].lower()
+
+            if palabra.endswith("o"):
+                clase = "word-noun"
+            elif palabra.endswith(("ar", "er", "ir")):
+                clase = "word-verb"
+            elif palabra.endswith("a"):
+                clase = "word-adj"
+            elif "r" not in palabra and len(palabra) > 3:
+                clase = "word-error"
+            else:
+                clase = "word-unknown"
+
+            html_segmentos += f'<div class="segment-box {clase}">{mostrar}</div>'
+
+        html_segmentos += '</div>'
+
+        st.html(html_segmentos)
+
     else:
         st.info("Aún no hay transcripción disponible.")
 
-    st.write("---")
+    # ============================
+    #   EDITOR
+    # ============================
+    st.subheader("📝 Editor de Transcripción")
 
-    # --- EDICIÓN REACTIVA ---
     if st.session_state.transcripcion:
+
         texto_para_editar = " ".join([w["word"] for w in st.session_state.transcripcion])
 
         nuevo_texto = st.text_area(
-            "📝 Corrección manual (Edita y pulsa Ctrl+Enter para actualizar):",
+            "Corrección manual:",
             value=texto_para_editar,
             height=150
         )
 
-        # Si el texto cambió, procesamos la edición
         if nuevo_texto != texto_para_editar:
             palabras_nuevas = nuevo_texto.split()
             original = st.session_state.transcripcion
             nueva_lista = []
 
-            es_seguro_entrenar = len(palabras_nuevas) == len(original)
+            es_seguro = len(palabras_nuevas) == len(original)
 
             for i, p_word in enumerate(palabras_nuevas):
                 if i < len(original):
                     st_time = original[i]["start"]
 
-                    # ENTRENAMIENTO SEGURO
-                    if es_seguro_entrenar:
+                    if es_seguro:
                         palabra_vieja = original[i]["word"]
                         if p_word.lower() != palabra_vieja.lower():
                             guardar_correccion(palabra_vieja, p_word)
-                            logging.info(f"Corrección aprendida: {palabra_vieja} → {p_word}")
 
                 else:
                     st_time = nueva_lista[-1]["start"] + 0.3 if nueva_lista else 0.0
@@ -268,100 +350,99 @@ with col1:
             st.session_state.transcripcion = nueva_lista
             st.rerun()
 
+    # ============================
+    #   ANÁLISIS FONOLÓGICO
+    # ============================
+    st.subheader("🧠 Análisis Fonológico (Mockup)")
+
+    edad = st.number_input("Edad del niño", 2, 12, 5)
+
+    if st.button("🔍 Analizar PSF"):
+        palabras = [w["word"] for w in st.session_state.transcripcion]
+
+        errores_detectados = sum(
+            (("r" not in p and len(p) > 3) or (p.endswith("o") and len(p) <= 3))
+            for p in palabras
+        )
+
+        esperados = {2:12,3:10,4:8,5:6,6:4,7:3,8:2,9:1,10:1,11:0,12:0}[edad]
+
+        fig, ax = plt.subplots(figsize=(6,4))
+        ax.bar(["Esperados","Detectados"], [esperados, errores_detectados],
+               color=["#4ECDC4","#FF6B6B"])
+        ax.set_title(f"Perfil Fonológico (Edad {edad})")
+        st.pyplot(fig)
+
+    st.subheader("📋 Resumen de Errores")
+
+    if st.session_state.transcripcion:
+        errores = {"Omisiones":0,"Sustituciones":0,"Simplificaciones":0,"Rotacismo":0,"Otros":0}
+
+        for w in [x["word"] for x in st.session_state.transcripcion]:
+            if "r" not in w and len(w)>3: errores["Rotacismo"]+=1
+            if w.endswith("o") and len(w)<=3: errores["Simplificaciones"]+=1
+            if w.startswith("m") and "p" in w: errores["Sustituciones"]+=1
+            if len(w)<=2: errores["Omisiones"]+=1
+
+        st.table(errores)
+
+    # ============================
+    #   ANÁLISIS PROSÓDICO
+    # ============================
+    st.subheader("🎵 Análisis Prosódico (Mockup)")
+
+    if st.button("🎚️ Analizar Prosodia"):
+        palabras = len(st.session_state.transcripcion)
+        pitch = 180 + (palabras % 20) * 2
+        var = 20 + (palabras % 5) * 3
+        dur = palabras * 0.45
+
+        st.info(f"Pitch promedio: {pitch} Hz")
+        st.info(f"Variabilidad: {var} Hz")
+        st.info(f"Duración estimada: {dur} s")
+
+        t = np.linspace(0, dur, 100)
+        curva = pitch + np.sin(t*3)*var
+
+        fig2, ax2 = plt.subplots(figsize=(6,4))
+        ax2.plot(t, curva, color="#6EA8FE")
+        st.pyplot(fig2)
+
 
 # ============================
-#   COLUMNA DERECHA (JSON)
+#   COLUMNA DERECHA
 # ============================
 with col2:
-    st.subheader("📊 Metadatos JSON")
-    st.write("Estructura de datos en tiempo real:")
 
+    st.subheader("📊 Metadatos JSON")
     st.json(st.session_state.transcripcion)
 
     st.divider()
-    st.subheader("📥 Gestión de Resultados")
 
-    # 1. Nombre del archivo con timestamp
-    timestamp_str = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-    nombre_archivo = f"sesion_{timestamp_str}.json"
+    st.subheader("📥 Guardar Resultados")
+
+    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    nombre_archivo = f"sesion_{timestamp}.json"
     json_string = json.dumps(st.session_state.transcripcion, indent=4, ensure_ascii=False)
 
-    # 2. BOTÓN DE DESCARGA
-    st.download_button(
-        label="💾 Descargar para entregar",
-        data=json_string,
-        file_name=nombre_archivo,
-        mime="application/json"
-    )
+    st.download_button("💾 Descargar JSON", json_string, nombre_archivo)
 
-    # 3. GUARDADO AUTOMÁTICO EN /docs
-    if st.button("📁 Guardar copia local en /docs"):
-        try:
-            subcarpeta = os.path.join("docs", "sesiones")
-            if not os.path.exists(subcarpeta):
-                os.makedirs(subcarpeta)
-                st.info(f"Carpeta {subcarpeta} creada con éxito.")
-
-            ruta_local = os.path.join(subcarpeta, nombre_archivo)
-
-            with open(ruta_local, "w", encoding="utf-8") as f:
-                f.write(json_string)
-
-            logging.info(f"Archivo guardado en: {ruta_local}")
-            st.success(f"✅ Guardado en: {ruta_local}")
-
-        except Exception as e:
-            logging.error(f"Error guardando archivo: {str(e)}")
-            st.error(f"❌ Error al guardar: {e}")
-
-    # --- FOOTER PROFESIONAL ---
-    st.markdown(
-        """
-        <style>
-
-            /* Animación de brillo suave */
-            @keyframes glow {
-                0%   { text-shadow: 0 0 2px #6EA8FE; }
-                50%  { text-shadow: 0 0 8px #6EA8FE; }
-                100% { text-shadow: 0 0 2px #6EA8FE; }
-            }
-
-            .footer-phono {
-                text-align: center;
-                color: #8B949E;
-                font-size: 14px;
-                padding: 10px 0;
-                margin-top: 20px;
-                opacity: 0;
-                animation: fadeIn 1.2s ease-out forwards;
-            }
-
-            /* Fade-in suave */
-            @keyframes fadeIn {
-                0% { opacity: 0; transform: translateY(5px); }
-                100% { opacity: 1; transform: translateY(0); }
-            }
-
-            /* Solo el nombre y el título brillan */
-            .footer-phono strong {
-                color: #E6EDF3;
-                animation: glow 3s ease-in-out infinite;
-            }
-
-        </style>
-
-        <hr style="margin-top: 40px; border-color: #30363D;">
-
-        <div class="footer-phono">
-            <p style="margin: 0;">
-                <strong>PhonoSyncAI</strong> · TFG DAM · 2026
-            </p>
-            <p style="margin: 0;">
-                Desarrollado por <strong>Justina Araneda Rodríguez</strong>
-            </p>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
+    if st.button("📁 Guardar en /docs/sesiones"):
+        carpeta = "docs/sesiones"
+        os.makedirs(carpeta, exist_ok=True)
+        ruta = os.path.join(carpeta, nombre_archivo)
+        with open(ruta, "w", encoding="utf-8") as f:
+            f.write(json_string)
+        st.success(f"Guardado en {ruta}")
 
 
+# ============================
+#   FOOTER
+# ============================
+st.markdown("""
+<hr style="margin-top:40px; border-color:#30363D;">
+<div style="text-align:center; color:#8B949E;">
+    <strong style="color:#E6EDF3;">PhonoSyncAI</strong> · TFG DAM · 2026<br>
+    Desarrollado por <strong style="color:#E6EDF3;">Justina Araneda Rodríguez</strong>
+</div>
+""", unsafe_allow_html=True)

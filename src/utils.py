@@ -19,19 +19,45 @@ def cargar_correcciones():
         return json.load(f)
 
 def guardar_correccion(palabra_original, palabra_corregida):
-    # Limpiamos ambas palabras antes de guardarlas
+    # Limpiar
     original = limpiar_palabra(palabra_original)
     corregida = limpiar_palabra(palabra_corregida)
-    
-    # Si alguna se quedó vacía al limpiar, no hacemos nada
+
+    # 1. No guardar si están vacías
     if not original or not corregida:
         return
-    
-    correcciones = cargar_correcciones()
+
+    # 2. No guardar si son iguales
+    if original == corregida:
+        return
+
+    # 3. No guardar palabras funcionales
+    palabras_funcionales = {"la", "el", "de", "que", "y", "a", "en", "un", "una", "se"}
+    if original in palabras_funcionales:
+        return
+
+    # 4. No guardar si la corrección cambia demasiado la palabra
+    # (evita cosas como "pio" → "rápido")
+    if abs(len(original) - len(corregida)) > 3:
+        return
+
+    # 5. No guardar si la corrección no parece un error ortográfico
+    # (evita errores fonológicos infantiles)
+    if original[0] != corregida[0]:
+        return
+
+    # 6. Cargar correcciones existentes
+    try:
+        correcciones = cargar_correcciones()
+    except:
+        correcciones = {}
+
+    # 7. Guardar corrección segura
     correcciones[original] = corregida
-    
+
     with open(ARCHIVO_CORRECCIONES, "w", encoding="utf-8") as f:
-        json.dump(correcciones, f, indent=4, ensure_ascii=False) # Guarda con formato legible y soporte para caracteres especiales.
+        json.dump(correcciones, f, indent=4, ensure_ascii=False)
+
 
 def aplicar_correcciones(palabra_whisper):
     correcciones = cargar_correcciones()

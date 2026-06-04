@@ -2,9 +2,30 @@ import json
 import whisper
 import soundfile as sf
 from typing import Dict, Any
-import config
 import logging
+import os
 
+
+def inicializar_whisper(tipo_modelo="base"):
+    # Definimos la ruta relativa exacta donde queremos que viva el modelo
+    # Esto apuntará a la carpeta /modelos/whisper/ en la raíz de tu proyecto
+    ruta_modelos = os.path.join(os.getcwd(), "modelos", "whisper")
+    
+    # Creamos la carpeta automáticamente si aún no existe
+    os.makedirs(ruta_modelos, exist_ok=True)
+    
+    print(f"Cargando modelo '{tipo_modelo}' desde: {ruta_modelos}...")
+    
+    # Al pasar download_root, Whisper lo descarga ahí la primera vez.
+    # Las siguientes veces, detecta que ya existe y lo carga en milisegundos de forma 100% offline.
+    modelo = whisper.load_model(tipo_modelo, download_root=ruta_modelos)
+    
+    return modelo
+
+# Prueba rápida
+if __name__ == "__main__":
+    motor = inicializar_whisper("base")
+    print("✅ ¡Misión cumplida! Modelo configurado en local.")
 
 def transcribir_audio(ruta_audio: str, modelo: str = "small") -> Dict[str, Any]:
     """Transcribe un archivo de audio y devuelve texto y marcas temporales.
@@ -38,7 +59,7 @@ def transcribir_audio(ruta_audio: str, modelo: str = "small") -> Dict[str, Any]:
     # Transcripción
     try:
         logging.info(f"Cargando modelo Whisper: {modelo}")
-        model = whisper.load_model(modelo)
+        model = inicializar_whisper(modelo)
 
         logging.info("Iniciando transcripción...")
         resultado = model.transcribe(
